@@ -14,10 +14,10 @@ const MyMapView = (props) => {
         <Marker
           key={marker.UUID}
           coordinate={{
-            latitude: marker.latitude,
-            longitude: marker.longitude,
+            latitude: parseFloat(marker.lat),
+            longitude: parseFloat(marker.long),
           }}
-          title={marker.pName}
+          title={marker.name}
           description={`Parking Lot Status: ${
             marker.status === "0" ? "Empty" : "Busy"
           }`}

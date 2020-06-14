@@ -8,14 +8,67 @@ import {
 } from "../services/location-service";
 import { mocks } from "../constants";
 
+const API = "http://192.168.1.17:8080/api/parking";
 class MapContainer extends React.Component {
   state = {
     region: {},
-    parkings: mocks.parkings,
+    // parkings: mocks.parkings,
+    parkings: {},
+    lots: {},
+  };
+
+  getLots = (id) => {
+    fetch(API + "/lots/" + id, {
+      method: "get",
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          console.log("SUCCESSSS!");
+          return response.json();
+        } else {
+          console.log(response.json());
+          console.log("ERRORRRR!");
+          return undefined;
+        }
+      })
+      .then((data) => {
+        let result = data.values;
+        console.log(result);
+        this.setState({ lots: result });
+      })
+      .catch((err) => {
+        throw err;
+      });
+  };
+
+  getAll = () => {
+    fetch(API + "/locations", {
+      method: "get",
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          console.log("SUCCESSSS!");
+          return response.json();
+        } else {
+          console.log(response.json());
+          console.log("ERRORRRR!");
+          return undefined;
+        }
+      })
+      .then((data) => {
+        let result = data.values;
+        // console.log(result);
+        this.setState({ parkings: result });
+      })
+      .catch((err) => {
+        throw err;
+      });
   };
 
   componentDidMount() {
     this.getInitialState();
+    this.getAll();
+    this.getLots("001001");
   }
 
   getInitialState() {
