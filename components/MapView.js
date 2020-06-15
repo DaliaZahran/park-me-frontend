@@ -1,30 +1,515 @@
 import React from "react";
-import MapView, { Marker } from "react-native-maps";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableWithoutFeedback,
+  TouchableOpacity,
+  FlatList,
+  // ScrollView,
+} from "react-native";
+import { Table, Row } from "react-native-table-component";
+import { ScrollView } from "react-native-gesture-handler";
+import MapView, { Marker, Callout } from "react-native-maps";
+import Modal from "react-native-modal";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import { Button } from "../components";
+import { markerTheme } from "../constants";
+import { theme } from "../constants";
 
-const MyMapView = (props) => {
-  return (
-    <MapView
-      style={{ flex: 1 }}
-      region={props.region}
-      showsUserLocation={true}
-      // onRegionChange={(reg) => props.onRegionChange(reg)}
-    >
-      <Marker coordinate={props.region} />
-      {props.markers.map((marker) => (
-        <Marker
-          key={marker.UUID}
-          coordinate={{
-            latitude: parseFloat(marker.lat),
-            longitude: parseFloat(marker.long),
-          }}
-          title={marker.name}
-          description={`Parking Lot Status: ${
-            marker.status === "0" ? "Empty" : "Busy"
-          }`}
-          pinColor={marker.status === "0" ? "green" : "red"}
-        ></Marker>
-      ))}
-    </MapView>
-  );
-};
+const { height, width } = Dimensions.get("screen");
+const API = "http://192.168.1.17:8080/api/parking";
+
+class MyMapView extends React.Component {
+  state = {
+    active: null,
+    activeModal: null,
+    activeLots: [],
+    lotsTableData: [],
+    tableHead: ["Lot No.", "Status"],
+    widthArr: [150, 150],
+  };
+
+  getLots = (id) => {
+    fetch(API + "/lots/" + id, {
+      method: "get",
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          // console.log("SUCCESSSS!");
+          return response.json();
+        } else {
+          console.log(response.json());
+          console.log("ERRORRRR!");
+          return undefined;
+        }
+      })
+      .then((data) => {
+        let result = data.values;
+        // console.log(result);
+        this.setState({ activeLots: result });
+      })
+      .catch((err) => {
+        throw err;
+      });
+  };
+  renderParking = (item) => {
+    return (
+      <TouchableWithoutFeedback
+        key={`parking-${item.UUID}`}
+        onPress={() => this.setState({ active: item.UUID })}
+      >
+        <View style={[styles.parking, styles.shadow]}>
+          <View style={styles.hours}>
+            <Text style={styles.hoursTitle}>
+              x {item.spots} {item.name}
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text style={{ color: markerTheme.COLORS.gray }}>
+                {item.address}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.parkingInfoContainer}>
+            <View style={styles.parkingInfo}>
+              <View style={styles.parkingIcon}>
+                <Ionicons
+                  name="ios-car"
+                  size={markerTheme.SIZES.icon * 1.3}
+                  color={markerTheme.COLORS.gray}
+                />
+                <Text style={{ marginLeft: markerTheme.SIZES.base }}>
+                  {item.spots}
+                </Text>
+              </View>
+              <View style={styles.parkingIcon}>
+                <Ionicons
+                  name="ios-checkmark-circle"
+                  size={markerTheme.SIZES.icon * 1.3}
+                  color={markerTheme.COLORS.green}
+                />
+                <Text style={{ marginLeft: markerTheme.SIZES.base }}>
+                  {item.free}
+                </Text>
+              </View>
+            </View>
+            <Button
+              gradient
+              style={styles.buy}
+              onPress={() => this.setState({ activeModal: item })}
+            >
+              <View style={styles.buyTotal}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={styles.buyTotalPrice}>View Details</Text>
+                </View>
+              </View>
+              <View style={styles.buyBtn}>
+                <FontAwesome
+                  name="angle-right"
+                  size={markerTheme.SIZES.icon * 1.75}
+                  color={markerTheme.COLORS.white}
+                />
+              </View>
+            </Button>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+    );
+  };
+
+  renderParkings = (parkings) => {
+    return (
+      <FlatList
+        horizontal
+        pagingEnabled
+        scrollEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        snapToAlignment="center"
+        style={styles.parkings}
+        data={this.props.markers}
+        keyExtractor={(item, index) => `${item.UUID}`}
+        renderItem={({ item }) => this.renderParking(item)}
+      />
+    );
+  };
+
+  renderModal() {
+    const activeModal = this.state.activeModal;
+    if (!activeModal) return null;
+    this.getLots(activeModal.UUID);
+    return (
+      <Modal
+        isVisible
+        useNativeDriver
+        style={styles.modalContainer}
+        backdropColor={markerTheme.COLORS.overlay}
+        onBackButtonPress={() => this.setState({ activeModal: null })}
+        onBackdropPress={() => this.setState({ activeModal: null })}
+        onSwipeComplete={() => this.setState({ activeModal: null })}
+      >
+        <View style={styles.modal}>
+          <View>
+            <Text
+              style={{
+                fontSize: markerTheme.SIZES.font * 1.5,
+                fontWeight: "400",
+              }}
+            >
+              {activeModal.name}
+            </Text>
+          </View>
+          <View style={{ paddingVertical: markerTheme.SIZES.base }}>
+            <Text
+              style={{
+                color: markerTheme.COLORS.gray,
+                fontSize: markerTheme.SIZES.font * 1.1,
+              }}
+            >
+              {activeModal.address}
+            </Text>
+          </View>
+          <View style={styles.modalInfo}>
+            <View
+              style={[styles.parkingIcon, { justifyContent: "flex-start" }]}
+            >
+              <Ionicons
+                name="ios-car"
+                size={markerTheme.SIZES.icon * 1.6}
+                color={markerTheme.COLORS.gray}
+              />
+              <Text style={{ fontSize: markerTheme.SIZES.icon * 1.15 }}>
+                {" "}
+                {activeModal.free}/{activeModal.spots}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.tableContainer}>
+            <Text
+              style={{
+                fontSize: markerTheme.SIZES.font * 1.5,
+                fontWeight: "700",
+                marginBottom: 20,
+                color: "#5a5a5a",
+              }}
+            >
+              Available Parking Lots
+            </Text>
+            <ScrollView horizontal={true}>
+              <View>
+                <Table borderStyle={{ borderWidth: 2, borderColor: "#c8e1ff" }}>
+                  <Row
+                    data={this.state.tableHead}
+                    widthArr={this.state.widthArr}
+                    style={styles.tableHeader}
+                    textStyle={styles.tableHeaderText}
+                  />
+                </Table>
+                <ScrollView style={styles.tableDataWrapper}>
+                  <Table
+                    borderStyle={{ borderWidth: 1, borderColor: "#C1C0B9" }}
+                  >
+                    {this.renderTableData()}
+                  </Table>
+                </ScrollView>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
+  renderTableData() {
+    return this.state.activeLots.map((tableRow, index) => {
+      return (
+        <Row
+          key={index}
+          data={[tableRow.lotNo, tableRow.status]}
+          widthArr={this.state.widthArr}
+          style={[
+            styles.tableRow,
+            parseInt(tableRow.status) && { backgroundColor: "#ececec" },
+          ]}
+          textStyle={styles.tableText}
+        />
+      );
+    });
+  }
+
+  convertObjects = (data) => {
+    var output = data.map(function (obj) {
+      return Object.keys(obj).map(function (key) {
+        return obj[key];
+      });
+    });
+    this.setState({ lotsTableData: output });
+    // console.log(output);
+  };
+
+  render() {
+    return (
+      <View style={styles.container}>
+        <MapView
+          style={{ flex: 1 }}
+          region={this.props.region}
+          showsUserLocation={true}
+          // onRegionChange={(reg) => this.props.onRegionChange(reg)}
+        >
+          <Marker coordinate={this.props.region} pinColor="purple" />
+          {this.props.markers.map((marker) => (
+            <Marker
+              key={marker.UUID}
+              coordinate={{
+                latitude: parseFloat(marker.lat),
+                longitude: parseFloat(marker.long),
+              }}
+              pinColor={
+                parseInt(marker.free) > 0
+                  ? theme.colors.secondary
+                  : markerTheme.COLORS.red
+              }
+            >
+              <Callout tooltip>
+                <TouchableWithoutFeedback
+                  onPress={() => this.setState({ active: marker.UUID })}
+                >
+                  <Button
+                    // gradient
+                    style={{ backgroundColor: "transparent" }}
+                    onPress={() => this.setState({ activeModal: item })}
+                  >
+                    <View
+                      style={[
+                        styles.marker,
+                        styles.shadow,
+                        this.state.active === marker.UUID
+                          ? styles.active
+                          : null,
+                      ]}
+                    >
+                      <Text style={styles.markerTitle}>{marker.name}</Text>
+                      <Text style={styles.markerStatus}>
+                        {" "}
+                        ({marker.free} / {marker.spots})
+                      </Text>
+                    </View>
+                  </Button>
+                </TouchableWithoutFeedback>
+              </Callout>
+            </Marker>
+          ))}
+        </MapView>
+        {this.renderParkings()}
+        {this.renderModal()}
+      </View>
+    );
+  }
+}
 export default MyMapView;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: markerTheme.COLORS.white,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "center",
+    paddingHorizontal: markerTheme.SIZES.base * 2,
+    paddingTop: markerTheme.SIZES.base * 2.5,
+    paddingBottom: markerTheme.SIZES.base * 1.5,
+  },
+  headerTitle: {
+    color: markerTheme.COLORS.gray,
+  },
+  headerLocation: {
+    fontSize: markerTheme.SIZES.font,
+    fontWeight: "500",
+    paddingVertical: markerTheme.SIZES.base / 3,
+  },
+  map: {
+    flex: 3,
+  },
+  parkings: {
+    position: "absolute",
+    right: 0,
+    left: 0,
+    bottom: 20,
+    paddingBottom: markerTheme.SIZES.base * 2,
+  },
+  parking: {
+    flexDirection: "row",
+    backgroundColor: markerTheme.COLORS.white,
+    borderRadius: 6,
+    // padding: markerTheme.SIZES.base,
+    marginHorizontal: markerTheme.SIZES.base * 2,
+    width: width - 24 * 2,
+    height: 150,
+  },
+  buy: {
+    flex: 1,
+    flexDirection: "row",
+    // paddingHorizontal: markerTheme.SIZES.base * 1.5,
+    // paddingVertical: markerTheme.SIZES.base,
+    // backgroundColor: markerTheme.COLORS.red,
+    borderRadius: 6,
+    width: 100,
+    height: 150 - markerTheme.SIZES.base * 3,
+    paddingRight: markerTheme.SIZES.base,
+  },
+  buyTotal: {
+    flex: 1,
+    justifyContent: "space-evenly",
+  },
+  buyTotalPrice: {
+    color: markerTheme.COLORS.white,
+    fontSize: markerTheme.SIZES.base * 1.85,
+    fontWeight: "700",
+    paddingLeft: markerTheme.SIZES.base * 1.2,
+    // textAlign: "center",
+  },
+  buyBtn: {
+    // flex: 0.5,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  marker: {
+    flexDirection: "row",
+    backgroundColor: markerTheme.COLORS.white,
+    borderRadius: markerTheme.SIZES.base * 2,
+    paddingVertical: 12,
+    paddingHorizontal: markerTheme.SIZES.base * 2,
+    borderWidth: 1,
+    borderColor: markerTheme.COLORS.red,
+  },
+  markerTitle: {
+    color: markerTheme.COLORS.gray,
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  markerStatus: {
+    color: markerTheme.COLORS.red,
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  shadow: {
+    shadowColor: markerTheme.COLORS.black,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  active: {
+    borderColor: markerTheme.COLORS.red,
+  },
+  hours: {
+    flex: 1,
+    flexDirection: "column",
+    marginLeft: markerTheme.SIZES.base / 2,
+    justifyContent: "space-evenly",
+    paddingLeft: markerTheme.SIZES.base,
+  },
+  hoursTitle: {
+    fontSize: markerTheme.SIZES.text,
+    fontWeight: "500",
+  },
+  hoursDropdown: {
+    borderRadius: markerTheme.SIZES.base / 2,
+    borderColor: markerTheme.COLORS.overlay,
+    borderWidth: 1,
+    padding: markerTheme.SIZES.base,
+    marginRight: markerTheme.SIZES.base / 2,
+  },
+  // hoursDropdownOption: {
+  //   padding: 5,
+  //   fontSize: markerTheme.SIZES.font * 0.8,
+  // },
+  // hoursDropdownStyle: {
+  //   marginLeft: -markerTheme.SIZES.base,
+  //   paddingHorizontal: markerTheme.SIZES.base / 2,
+  //   marginVertical: -(markerTheme.SIZES.base + 1),
+  // },
+  parkingInfoContainer: { flex: 1.5, flexDirection: "row" },
+  parkingInfo: {
+    justifyContent: "space-evenly",
+    marginHorizontal: markerTheme.SIZES.base * 1.5,
+  },
+  parkingIcon: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalContainer: {
+    margin: 0,
+    justifyContent: "flex-end",
+  },
+  modal: {
+    flexDirection: "column",
+    height: height * 0.75,
+    padding: markerTheme.SIZES.base * 2,
+    backgroundColor: markerTheme.COLORS.white,
+    borderTopLeftRadius: markerTheme.SIZES.base,
+    borderTopRightRadius: markerTheme.SIZES.base,
+  },
+  modalInfo: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    paddingVertical: markerTheme.SIZES.base,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderTopColor: markerTheme.COLORS.overlay,
+    borderBottomColor: markerTheme.COLORS.overlay,
+  },
+  modalHours: {
+    paddingVertical: height * 0.11,
+  },
+  // modalHoursDropdown: {
+  //   flexDirection: "row",
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   paddingVertical: markerTheme.SIZES.base,
+  // },
+  // payBtn: {
+  //   borderRadius: 6,
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   justifyContent: "space-between",
+  //   padding: markerTheme.SIZES.base * 1.5,
+  //   backgroundColor: markerTheme.COLORS.red,
+  // },
+  // payText: {
+  //   fontWeight: "600",
+  //   fontSize: markerTheme.SIZES.base * 1.5,
+  //   color: markerTheme.COLORS.white,
+  // },
+  tableContainer: {
+    flex: 1,
+    padding: 16,
+    paddingTop: 30,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: markerTheme.COLORS.overlay,
+  },
+  tableHeader: { height: 50, backgroundColor: theme.colors.primary },
+  tableHeaderText: {
+    textAlign: "center",
+    fontWeight: "700",
+    fontSize: 24,
+    margin: 6,
+    color: markerTheme.COLORS.white,
+  },
+  tableText: {
+    textAlign: "center",
+    fontWeight: "100",
+    margin: 6,
+    fontWeight: "700",
+    fontSize: 20,
+  },
+  tableDataWrapper: { marginTop: -1 },
+  tableRow: { height: 40, flexDirection: "row" },
+});
