@@ -9,10 +9,10 @@ import {
 import { Button, Block, Input, Text } from "../components";
 import { theme } from "../constants";
 
-// const VALID_EMAIL = "admin@admin.com";
-// const VALID_PASSWORD = "123";
-const VALID_EMAIL = "";
-const VALID_PASSWORD = "";
+const VALID_EMAIL = "admin";
+const VALID_PASSWORD = "123";
+// const VALID_EMAIL = "";
+// const VALID_PASSWORD = "";
 
 export default class Login extends Component {
   static navigationOptions = {
