@@ -7,4 +7,5 @@ import About from "./About";
 import Home from "./Home";
 import Map from "./Map";
 import History from "./History";
+import More from "./More";
 // import HistoryStat from "./HistoryStat";

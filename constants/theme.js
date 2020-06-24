@@ -7,7 +7,12 @@ const colors = {
   white: "#FFFFFF",
   gray: "#9DA3B4",
   gray2: "#C5CCD6",
+  gray3: "#7D818A",
   red: "#D83C54",
+  overlay: "#C1BEC0",
+  lightRed: "#ffcccb",
+  lightGreen: "#d4f8d4",
+  green: "#33ff99",
 };
 const sizes = {
   // global sizes
