@@ -272,7 +272,7 @@ class MyMapView extends React.Component {
               // onPress={() => this.setState({ activeModal: item })}
             >
               <Text style={styles.payText}>
-                Proceed to pay £{activeModal.price * hours[activeModal.UUID]}
+                You will pay £{activeModal.price * hours[activeModal.UUID]}
                 {"  "}
               </Text>
               <FontAwesome

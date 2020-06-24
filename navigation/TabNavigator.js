@@ -6,6 +6,8 @@ import TabBarIcon from "../components/TabBarIcon";
 import Map from "../screens/Map";
 import Settings from "../screens/Settings";
 import About from "../screens/About";
+import History from "../screens/History";
+// import { Map, Settings, About, History } from "../screens";
 
 const Tab = createBottomTabNavigator();
 function TabNavigator() {
@@ -23,6 +25,16 @@ function TabNavigator() {
           title: "Search",
           tabBarIcon: ({ focused }) => (
             <TabBarIcon focused={focused} name="md-map" />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="History"
+        component={History}
+        options={{
+          title: "History",
+          tabBarIcon: ({ focused }) => (
+            <TabBarIcon focused={focused} name="md-stats" />
           ),
         }}
       />
