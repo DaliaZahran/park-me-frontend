@@ -9,6 +9,7 @@ import About from "../screens/About";
 import History from "../screens/History";
 import Stats from "../screens/Stats";
 import More from "../screens/More";
+// import spotsMap from "../screens/spotsMap";
 // import { Map, Settings, About, History } from "../screens";
 
 import DrawerNavigator from "../navigation/DrawerNavigator";

@@ -10,6 +10,7 @@ import {
 import { Button, Block, Input, Text } from "../components";
 import { theme } from "../constants";
 
+const API = "http://192.168.1.17:8080/api/users";
 export default class SignUp extends Component {
   state = {
     email: null,
@@ -21,10 +22,37 @@ export default class SignUp extends Component {
   static navigationOptions = {
     headerTitle: "",
   };
+
+  getAllUsers = () => {
+    fetch(API + "/", {
+      method: "get",
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          console.log("SUCCESSSS!");
+          // return response.json();
+        } else {
+          // console.log(response.json());
+          console.log("ERRORRRR!");
+          return undefined;
+        }
+      })
+      // .then((data) => {
+      //   let result = data.values;
+      //   // console.log(result);
+      //   this.setState({ parkings: result });
+      // })
+      .catch((err) => {
+        throw err;
+      });
+  };
+
   handleSignUp() {
     const { navigation } = this.props;
     const { email, username, password } = this.state;
     const errors = [];
+
+    // this.getAllUsers();
 
     Keyboard.dismiss();
     this.setState({ loading: true });

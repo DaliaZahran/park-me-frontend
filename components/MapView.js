@@ -7,6 +7,7 @@ import {
   TouchableWithoutFeedback,
   TouchableOpacity,
   FlatList,
+  Image,
 } from "react-native";
 import { Table, Row } from "react-native-table-component";
 import { ScrollView } from "react-native-gesture-handler";
@@ -29,6 +30,8 @@ class MyMapView extends React.Component {
     lotsTableData: [],
     tableHead: ["Lot No.", "Status"],
     widthArr: [150, 150],
+    modalVisibility: false,
+    futureModalVisibility: false,
   };
 
   UNSAFE_componentWillMount() {
@@ -43,10 +46,11 @@ class MyMapView extends React.Component {
   }
 
   handleHours = (id, value) => {
-    const { hours } = this.state;
+    const hours = this.state.hours;
     hours[id] = value;
 
-    this.setState({ hours });
+    this.setState({ hours: hours });
+    // this.setState({ hours: value });
   };
 
   getLots = (id) => {
@@ -84,9 +88,7 @@ class MyMapView extends React.Component {
       >
         <View style={[styles.parking, styles.shadow]}>
           <View style={styles.hours}>
-            <Text style={styles.hoursTitle}>
-              x {item.spots} {item.name}
-            </Text>
+            <Text style={styles.hoursTitle}>{item.name}</Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               {this.renderHours(item.UUID)}
               <Text style={{ color: markerTheme.COLORS.gray }}>hrs</Text>
@@ -234,54 +236,75 @@ class MyMapView extends React.Component {
               </Text>
             </View>
           </View>
-          <View style={styles.tableContainer}>
-            <Text
-              style={{
-                fontSize: markerTheme.SIZES.font * 1.5,
-                fontWeight: "700",
-                marginBottom: 20,
-                color: "#5a5a5a",
-              }}
-            >
-              Available Parking Lots
-            </Text>
-            <ScrollView horizontal={true}>
-              <View>
-                <Table borderStyle={{ borderWidth: 2, borderColor: "#c8e1ff" }}>
-                  <Row
-                    data={this.state.tableHead}
-                    widthArr={this.state.widthArr}
-                    style={styles.tableHeader}
-                    textStyle={styles.tableHeaderText}
-                  />
-                </Table>
-                <ScrollView style={styles.tableDataWrapper}>
-                  <Table
-                    borderStyle={{ borderWidth: 1, borderColor: "#C1C0B9" }}
-                  >
-                    {this.renderTableData()}
-                  </Table>
-                </ScrollView>
-              </View>
-            </ScrollView>
-          </View>
-          <View style={styles.payBtnContainer}>
-            <Button
-              gradient
-              style={styles.payBtn}
-              // onPress={() => this.setState({ activeModal: item })}
-            >
-              <Text style={styles.payText}>
-                You will pay £{activeModal.price * hours[activeModal.UUID]}
-                {"  "}
+          <ScrollView>
+            <View style={styles.tableContainer}>
+              <Text
+                style={{
+                  fontSize: markerTheme.SIZES.font * 1.5,
+                  fontWeight: "700",
+                  marginBottom: 20,
+                  color: "#5a5a5a",
+                }}
+              >
+                Available Parking Slots
               </Text>
-              <FontAwesome
-                name="angle-right"
-                size={markerTheme.SIZES.icon * 1.75}
-                color={markerTheme.COLORS.white}
+              <ScrollView horizontal={true}>
+                <View>
+                  <Table
+                    borderStyle={{ borderWidth: 2, borderColor: "#c8e1ff" }}
+                  >
+                    <Row
+                      data={this.state.tableHead}
+                      widthArr={this.state.widthArr}
+                      style={styles.tableHeader}
+                      textStyle={styles.tableHeaderText}
+                    />
+                  </Table>
+                  <ScrollView style={styles.tableDataWrapper}>
+                    <Table
+                      borderStyle={{ borderWidth: 1, borderColor: "#C1C0B9" }}
+                    >
+                      {this.renderTableData()}
+                    </Table>
+                  </ScrollView>
+                </View>
+              </ScrollView>
+            </View>
+            <View style={styles.imageContainer}>
+              <Text
+                style={{
+                  fontSize: markerTheme.SIZES.font * 1.5,
+                  fontWeight: "700",
+                  marginBottom: 20,
+                  color: "#5a5a5a",
+                }}
+              >
+                Map View
+              </Text>
+              <Image
+                source={require("../assets/images/parking-slots.jpg")}
+                resizeMode="contain"
+                style={{ width, height: 200, overflow: "visible" }}
               />
-            </Button>
-          </View>
+            </View>
+            <View style={styles.payBtnContainer}>
+              <Button
+                gradient
+                style={styles.payBtn}
+                // onPress={() => this.setState({ activeModal: item })}
+              >
+                <Text style={styles.payText}>
+                  You will pay £{activeModal.price * hours[activeModal.UUID]}
+                  {"  "}
+                </Text>
+                <FontAwesome
+                  name="angle-right"
+                  size={markerTheme.SIZES.icon * 1.75}
+                  color={markerTheme.COLORS.white}
+                />
+              </Button>
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     );
@@ -292,7 +315,7 @@ class MyMapView extends React.Component {
       return (
         <Row
           key={index}
-          data={[tableRow.lotNo, tableRow.status]}
+          data={[tableRow.lotNo, tableRow.status === "1" ? "Busy" : "Empty"]}
           widthArr={this.state.widthArr}
           style={[
             styles.tableRow,
@@ -355,10 +378,12 @@ class MyMapView extends React.Component {
                   ? theme.colors.secondary
                   : markerTheme.COLORS.red
               }
-              // onCalloutPress={() => this.setState({ activeModal: marker })}
-              onCalloutPress={() =>
+              onPress={() =>
                 this.scrollToIndex(this.props.markers.indexOf(marker))
               }
+              // onCalloutPress={() =>
+              //   this.scrollToIndex(this.props.markers.indexOf(marker))
+              // }
             >
               <Callout tooltip>
                 <TouchableOpacity
@@ -575,9 +600,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: markerTheme.COLORS.overlay,
+    // borderBottomWidth: 1,
+    // borderBottomColor: markerTheme.COLORS.overlay,
   },
+  markerPrice: { color: markerTheme.COLORS.red, fontWeight: "bold" },
   tableContainer: {
     flex: 1,
     padding: 16,
@@ -605,6 +631,20 @@ const styles = StyleSheet.create({
   },
   tableDataWrapper: { marginTop: -1 },
   tableRow: { height: 40, flexDirection: "row" },
-
-  markerPrice: { color: markerTheme.COLORS.red, fontWeight: "bold" },
+  imageContainer: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: markerTheme.COLORS.overlay,
+  },
+  futureContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: markerTheme.COLORS.overlay,
+  },
 });

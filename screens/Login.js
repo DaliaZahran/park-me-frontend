@@ -9,7 +9,7 @@ import {
 import { Button, Block, Input, Text } from "../components";
 import { theme } from "../constants";
 
-// const VALID_EMAIL = "admin";
+// const VALID_EMAIL = "parking_admin@gmail.com";
 // const VALID_PASSWORD = "123";
 const VALID_EMAIL = "";
 const VALID_PASSWORD = "";
