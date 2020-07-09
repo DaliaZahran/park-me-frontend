@@ -23,7 +23,7 @@ import DatePicker from "react-native-datepicker";
 
 const { height, width } = Dimensions.get("screen");
 const API = "http://192.168.1.17:8080/api/parking";
-
+const USERS_API = "http://192.168.1.17:8080/api/users";
 class MyMapView extends React.Component {
   state = {
     active: null,
@@ -39,6 +39,7 @@ class MyMapView extends React.Component {
     time: "",
     predictedFreeSlots: "",
     freeSpots: 0,
+    predictionResult: 0,
   };
 
   UNSAFE_componentWillMount() {
@@ -58,6 +59,58 @@ class MyMapView extends React.Component {
 
     this.setState({ hours: hours });
     // this.setState({ hours: value });
+  };
+
+  getPrediction = (id, timestamp) => {
+    // console.log(timestamp);
+    var dateString = timestamp,
+      dateTimeParts = dateString.split(" "),
+      timeParts = dateTimeParts[1].split(":"),
+      dateParts = dateTimeParts[0].split("-"),
+      date;
+
+    date = new Date(
+      dateParts[0],
+      parseInt(dateParts[1], 10) - 1,
+      dateParts[2],
+      timeParts[0],
+      timeParts[1]
+    );
+
+    console.log(date); //Tue Sep 17 2013 10:08:00 GMT-0400
+
+    // date = date.getHours(date.getHours() + 2);
+    var start_time = date.setMinutes(date.getMinutes() - 5);
+    var end_time = date.setMinutes(date.getMinutes() + 5);
+
+    fetch(USERS_API + "/lots-prediction", {
+      method: "post",
+      body: JSON.stringify({
+        parking_id: id,
+        startTimestamp: start_time,
+        endTimestamp: end_time,
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          return response.json();
+        } else {
+          console.log(response.json());
+          console.log("ERRORRRR!");
+          return undefined;
+        }
+      })
+      .then((data) => {
+        let result = data.values;
+        console.log(result[0].percentage);
+        this.setState({ predictionResult: result[0].percentage });
+      })
+      .catch((err) => {
+        throw err;
+      });
   };
 
   getLots = (id) => {
@@ -325,7 +378,17 @@ class MyMapView extends React.Component {
               }}
             />
           </View>
-          <Button transparent style={styles.predictAvailabilityBtn}>
+          {/* {console.log(this.state.date + " " + this.state.time + ":00")} */}
+          <Button
+            transparent
+            style={styles.predictAvailabilityBtn}
+            onPress={() =>
+              this.getPrediction(
+                activeModal.UUID,
+                this.state.date + " " + this.state.time + ":00"
+              )
+            }
+          >
             <Text style={styles.predictAvailabilityText}>
               Predict Availability
             </Text>
@@ -336,7 +399,7 @@ class MyMapView extends React.Component {
             </Text>
             <Button style={styles.predictedBtn}>
               <Text style={styles.predictedSlots}>
-                {this.state.predictedFreeSlots}
+                {parseFloat(this.state.predictionResult) * activeModal.spots}
               </Text>
             </Button>
           </View>
@@ -572,7 +635,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: markerTheme.COLORS.white,
     borderRadius: 6,
-    // padding: markerTheme.SIZES.base,
     marginHorizontal: markerTheme.SIZES.base * 2,
     width: width - 24 * 2,
     height: 150,
@@ -580,9 +642,6 @@ const styles = StyleSheet.create({
   buy: {
     flex: 1,
     flexDirection: "row",
-    // paddingHorizontal: markerTheme.SIZES.base * 1.5,
-    // paddingVertical: markerTheme.SIZES.base,
-    // backgroundColor: markerTheme.COLORS.red,
     borderRadius: 6,
     width: 100,
     height: 150 - markerTheme.SIZES.base * 3,
@@ -666,7 +725,6 @@ const styles = StyleSheet.create({
     borderColor: markerTheme.COLORS.overlay,
     borderWidth: 1,
     marginLeft: -markerTheme.SIZES.base,
-    // paddingHorizontal: markerTheme.SIZES.base / 2,
     marginVertical: -(markerTheme.SIZES.base + 1),
   },
   parkingInfoContainer: { flex: 1.5, flexDirection: "row" },
@@ -725,8 +783,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    // borderBottomWidth: 1,
-    // borderBottomColor: markerTheme.COLORS.overlay,
   },
   markerPrice: { color: markerTheme.COLORS.red, fontWeight: "bold" },
   tableContainer: {
@@ -736,8 +792,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-    // borderBottomWidth: 1,
-    // borderBottomColor: markerTheme.COLORS.overlay,
   },
   tableHeader: { height: 50, backgroundColor: theme.colors.primary },
   tableHeaderText: {
@@ -795,9 +849,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 24,
     fontWeight: "700",
-    // paddingTop: 40,
-    // borderTopWidth: 1,
-    // borderTopColor: markerTheme.COLORS.overlay,
     color: markerTheme.COLORS.black,
     textDecorationLine: "underline",
   },
@@ -818,7 +869,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   predictedTitle: {
-    // flex: 1,
     textAlign: "center",
     fontSize: 24,
     fontWeight: "700",
