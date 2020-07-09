@@ -12,8 +12,6 @@ import More from "../screens/More";
 // import spotsMap from "../screens/spotsMap";
 // import { Map, Settings, About, History } from "../screens";
 
-import DrawerNavigator from "../navigation/DrawerNavigator";
-
 const Tab = createBottomTabNavigator();
 function TabNavigator() {
   return (
@@ -64,16 +62,6 @@ function TabNavigator() {
         }}
       />
       {/* 
-      <Tab.Screen
-        name="Settings"
-        component={Settings}
-        options={{
-          title: "Settings",
-          tabBarIcon: ({ focused }) => (
-            <TabBarIcon focused={focused} name="md-settings" />
-          ),
-        }}
-      />
       
       <Tab.Screen
         name="About"

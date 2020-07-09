@@ -17,6 +17,9 @@ import Dropdown from "react-native-modal-dropdown";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { Button } from "../components";
 import { markerTheme, theme } from "../constants";
+// import DateTimePicker from "@react-native-community/datetimepicker";
+// import DateTimePicker from "react-native-modal-datetime-picker";
+import DatePicker from "react-native-datepicker";
 
 const { height, width } = Dimensions.get("screen");
 const API = "http://192.168.1.17:8080/api/parking";
@@ -32,6 +35,10 @@ class MyMapView extends React.Component {
     widthArr: [150, 150],
     modalVisibility: false,
     futureModalVisibility: false,
+    date: "",
+    time: "",
+    predictedFreeSlots: "",
+    freeSpots: 0,
   };
 
   UNSAFE_componentWillMount() {
@@ -59,7 +66,6 @@ class MyMapView extends React.Component {
     })
       .then((response) => {
         if (response.status === 200) {
-          // console.log("SUCCESSSS!");
           return response.json();
         } else {
           console.log(response.json());
@@ -69,7 +75,7 @@ class MyMapView extends React.Component {
       })
       .then((data) => {
         let result = data.values;
-        // console.log(result);
+        result.filter((value) => value.status === 0).length;
         this.setState({ activeLots: result });
       })
       .catch((err) => {
@@ -93,6 +99,16 @@ class MyMapView extends React.Component {
               {this.renderHours(item.UUID)}
               <Text style={{ color: markerTheme.COLORS.gray }}>hrs</Text>
             </View>
+            <TouchableOpacity
+              onPress={() =>
+                this.setState({
+                  activeModal: item,
+                  futureModalVisibility: true,
+                })
+              }
+            >
+              <Text style={{ color: "blue" }}>Check Future Availability</Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.parkingInfoContainer}>
             <View style={styles.parkingInfo}>
@@ -120,7 +136,9 @@ class MyMapView extends React.Component {
             <Button
               gradient
               style={styles.buy}
-              onPress={() => this.setState({ activeModal: item })}
+              onPress={() =>
+                this.setState({ activeModal: item, modalVisibility: true })
+              }
             >
               <View style={styles.buyTotal}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -135,6 +153,7 @@ class MyMapView extends React.Component {
                   {item.price}x{hours[item.UUID]} hrs
                 </Text>
               </View>
+
               <View style={styles.buyBtn}>
                 <FontAwesome
                   name="angle-right"
@@ -171,142 +190,248 @@ class MyMapView extends React.Component {
   scrollToIndex = (selectedIndex) => {
     this.flatListRef.scrollToIndex({ animated: true, index: selectedIndex });
   };
+  renderMondalHeader(activeModal) {
+    return (
+      <View>
+        <View>
+          <Text
+            style={{
+              fontSize: markerTheme.SIZES.font * 1.5,
+              fontWeight: "400",
+            }}
+          >
+            {activeModal.name}
+          </Text>
+        </View>
+        <View style={{ paddingVertical: markerTheme.SIZES.base }}>
+          <Text
+            style={{
+              color: markerTheme.COLORS.gray,
+              fontSize: markerTheme.SIZES.font * 1.1,
+            }}
+          >
+            {activeModal.address}
+          </Text>
+        </View>
+        <View style={styles.modalInfo}>
+          <View style={[styles.parkingIcon, { justifyContent: "flex-start" }]}>
+            <Ionicons
+              name="md-car"
+              size={markerTheme.SIZES.icon * 1.6}
+              color={markerTheme.COLORS.gray}
+            />
+            <Text style={{ fontSize: markerTheme.SIZES.icon * 1.15 }}>
+              {" "}
+              {
+                this.state.activeLots.filter((item) => item.status === "0")
+                  .length
+              }
+              /{activeModal.spots}
+            </Text>
+          </View>
+          <View style={[styles.parkingIcon, { justifyContent: "flex-start" }]}>
+            <Ionicons
+              name="md-pricetag"
+              size={markerTheme.SIZES.icon * 1.4}
+              color={markerTheme.COLORS.gray}
+            />
+            <Text style={{ fontSize: markerTheme.SIZES.icon * 1.15 }}>
+              {" "}
+              £{activeModal.price}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
-  renderModal() {
-    // const activeModal = this.state.activeModal;
-    const { activeModal, hours } = this.state;
-    if (!activeModal) return null;
-    this.getLots(activeModal.UUID);
+  renderFutureModal() {
+    const { futureModalVisibility, activeModal } = this.state;
+    if (!futureModalVisibility) return null;
     return (
       <Modal
         isVisible
         useNativeDriver
+        transparent={true}
+        animanimationType="fade"
+        // visible={futureModalVisibility}
         style={styles.modalContainer}
         backdropColor={markerTheme.COLORS.overlay}
-        onBackButtonPress={() => this.setState({ activeModal: null })}
-        onBackdropPress={() => this.setState({ activeModal: null })}
-        onSwipeComplete={() => this.setState({ activeModal: null })}
+        onBackButtonPress={() =>
+          this.setState({ futureModalVisibility: false })
+        }
+        onBackdropPress={() => this.setState({ futureModalVisibility: false })}
+        onSwipeComplete={() => this.setState({ futureModalVisibility: false })}
       >
         <View style={styles.modal}>
-          <View>
-            <Text
-              style={{
-                fontSize: markerTheme.SIZES.font * 1.5,
-                fontWeight: "400",
+          {this.renderMondalHeader(activeModal)}
+          <View style={styles.datePicker}>
+            <DatePicker
+              style={{ width: 200 }}
+              date={this.state.date}
+              mode="date"
+              placeholder="select date"
+              format="YYYY-MM-DD"
+              minDate="2016-05-01"
+              maxDate="2050-06-01"
+              confirmBtnText="Confirm"
+              cancelBtnText="Cancel"
+              customStyles={{
+                dateIcon: {
+                  position: "absolute",
+                  left: 0,
+                  marginLeft: 0,
+                  height: 44,
+                },
+                dateInput: {
+                  marginLeft: 36,
+                  height: 44,
+                },
+                dateText: {
+                  fontSize: 23,
+                },
               }}
-            >
-              {activeModal.name}
-            </Text>
-          </View>
-          <View style={{ paddingVertical: markerTheme.SIZES.base }}>
-            <Text
-              style={{
-                color: markerTheme.COLORS.gray,
-                fontSize: markerTheme.SIZES.font * 1.1,
+              onDateChange={(date) => {
+                this.setState({ date: date });
               }}
-            >
-              {activeModal.address}
+            />
+          </View>
+          <View style={styles.timePicker}>
+            <DatePicker
+              style={{ width: 200 }}
+              date={this.state.time}
+              mode="time"
+              placeholder="select time"
+              confirmBtnText="Confirm"
+              cancelBtnText="Cancel"
+              customStyles={{
+                dateIcon: {
+                  position: "absolute",
+                  left: 0,
+                  // top: 4,
+                  marginLeft: 0,
+                  height: 44,
+                },
+                dateInput: {
+                  marginLeft: 36,
+                  height: 44,
+                },
+                dateText: {
+                  fontSize: 23,
+                },
+              }}
+              onDateChange={(time) => {
+                this.setState({ time: time });
+              }}
+            />
+          </View>
+          <Button transparent style={styles.predictAvailabilityBtn}>
+            <Text style={styles.predictAvailabilityText}>
+              Predict Availability
             </Text>
+          </Button>
+          <View style={styles.payBtnContainer}>
+            <Text style={styles.predictedTitle}>
+              Predicted Number of Available Spots
+            </Text>
+            <Button style={styles.predictedBtn}>
+              <Text style={styles.predictedSlots}>
+                {this.state.predictedFreeSlots}
+              </Text>
+            </Button>
           </View>
-          <View style={styles.modalInfo}>
-            <View
-              style={[styles.parkingIcon, { justifyContent: "flex-start" }]}
-            >
-              <Ionicons
-                name="md-car"
-                size={markerTheme.SIZES.icon * 1.6}
-                color={markerTheme.COLORS.gray}
-              />
-              <Text style={{ fontSize: markerTheme.SIZES.icon * 1.15 }}>
-                {" "}
-                {activeModal.free}/{activeModal.spots}
-              </Text>
-            </View>
-            <View
-              style={[styles.parkingIcon, { justifyContent: "flex-start" }]}
-            >
-              <Ionicons
-                name="md-pricetag"
-                size={markerTheme.SIZES.icon * 1.4}
-                color={markerTheme.COLORS.gray}
-              />
-              <Text style={{ fontSize: markerTheme.SIZES.icon * 1.15 }}>
-                {" "}
-                £{activeModal.price}
-              </Text>
-            </View>
-          </View>
-          <ScrollView>
-            <View style={styles.tableContainer}>
-              <Text
-                style={{
-                  fontSize: markerTheme.SIZES.font * 1.5,
-                  fontWeight: "700",
-                  marginBottom: 20,
-                  color: "#5a5a5a",
-                }}
-              >
-                Available Parking Slots
-              </Text>
-              <ScrollView horizontal={true}>
-                <View>
-                  <Table
-                    borderStyle={{ borderWidth: 2, borderColor: "#c8e1ff" }}
-                  >
-                    <Row
-                      data={this.state.tableHead}
-                      widthArr={this.state.widthArr}
-                      style={styles.tableHeader}
-                      textStyle={styles.tableHeaderText}
-                    />
-                  </Table>
-                  <ScrollView style={styles.tableDataWrapper}>
-                    <Table
-                      borderStyle={{ borderWidth: 1, borderColor: "#C1C0B9" }}
-                    >
-                      {this.renderTableData()}
-                    </Table>
+        </View>
+      </Modal>
+    );
+  }
+
+  renderModal() {
+    const { modalVisibility, activeModal, hours } = this.state;
+    if (!activeModal) return null;
+    this.getLots(activeModal.UUID);
+    return (
+      <View>
+        {modalVisibility && (
+          <Modal
+            // isVisible
+            useNativeDriver
+            transparent={true}
+            animanimationType="fade"
+            visible={modalVisibility}
+            style={styles.modalContainer}
+            backdropColor={markerTheme.COLORS.overlay}
+            onBackButtonPress={() => this.setState({ modalVisibility: false })}
+            onBackdropPress={() => this.setState({ modalVisibility: false })}
+            onSwipeComplete={() => this.setState({ modalVisibility: false })}
+          >
+            <View style={styles.modal}>
+              {this.renderMondalHeader(activeModal)}
+              <ScrollView>
+                <View style={styles.tableContainer}>
+                  <Text style={styles.modalHeading2}>
+                    Available Parking Slots
+                  </Text>
+                  <ScrollView horizontal={true}>
+                    <View>
+                      <Table
+                        borderStyle={{ borderWidth: 2, borderColor: "#c8e1ff" }}
+                      >
+                        <Row
+                          data={this.state.tableHead}
+                          widthArr={this.state.widthArr}
+                          style={styles.tableHeader}
+                          textStyle={styles.tableHeaderText}
+                        />
+                      </Table>
+                      <ScrollView style={styles.tableDataWrapper}>
+                        <Table
+                          borderStyle={{
+                            borderWidth: 1,
+                            borderColor: "#C1C0B9",
+                          }}
+                        >
+                          {this.renderTableData()}
+                        </Table>
+                      </ScrollView>
+                    </View>
                   </ScrollView>
+                </View>
+                <View style={styles.imageContainer}>
+                  <Text
+                    style={{
+                      fontSize: markerTheme.SIZES.font * 1.5,
+                      fontWeight: "700",
+                      marginBottom: 20,
+                      color: "#5a5a5a",
+                    }}
+                  >
+                    Map View
+                  </Text>
+                  <Image
+                    source={require("../assets/images/parking-slots.jpg")}
+                    resizeMode="contain"
+                    style={{ width, height: 200, overflow: "visible" }}
+                  />
+                </View>
+                <View style={styles.payBtnContainer}>
+                  <Button gradient style={styles.payBtn}>
+                    <Text style={styles.payText}>
+                      You will pay £
+                      {activeModal.price * hours[activeModal.UUID]}
+                      {"  "}
+                    </Text>
+                    <FontAwesome
+                      name="angle-right"
+                      size={markerTheme.SIZES.icon * 1.75}
+                      color={markerTheme.COLORS.white}
+                    />
+                  </Button>
                 </View>
               </ScrollView>
             </View>
-            <View style={styles.imageContainer}>
-              <Text
-                style={{
-                  fontSize: markerTheme.SIZES.font * 1.5,
-                  fontWeight: "700",
-                  marginBottom: 20,
-                  color: "#5a5a5a",
-                }}
-              >
-                Map View
-              </Text>
-              <Image
-                source={require("../assets/images/parking-slots.jpg")}
-                resizeMode="contain"
-                style={{ width, height: 200, overflow: "visible" }}
-              />
-            </View>
-            <View style={styles.payBtnContainer}>
-              <Button
-                gradient
-                style={styles.payBtn}
-                // onPress={() => this.setState({ activeModal: item })}
-              >
-                <Text style={styles.payText}>
-                  You will pay £{activeModal.price * hours[activeModal.UUID]}
-                  {"  "}
-                </Text>
-                <FontAwesome
-                  name="angle-right"
-                  size={markerTheme.SIZES.icon * 1.75}
-                  color={markerTheme.COLORS.white}
-                />
-              </Button>
-            </View>
-          </ScrollView>
-        </View>
-      </Modal>
+          </Modal>
+        )}
+      </View>
     );
   }
 
@@ -353,7 +478,6 @@ class MyMapView extends React.Component {
       });
     });
     this.setState({ lotsTableData: output });
-    // console.log(output);
   };
 
   render() {
@@ -409,6 +533,7 @@ class MyMapView extends React.Component {
         </MapView>
         {this.renderParkings()}
         {this.renderModal()}
+        {this.renderFutureModal()}
       </View>
     );
   }
@@ -646,5 +771,60 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderBottomWidth: 1,
     borderBottomColor: markerTheme.COLORS.overlay,
+  },
+  datePicker: {
+    alignItems: "center",
+    justifyContent: "center",
+    margin: 20,
+    marginTop: 20,
+  },
+  timePicker: {
+    alignItems: "center",
+    justifyContent: "center",
+    margin: 10,
+  },
+  modalHeading2: {
+    fontSize: markerTheme.SIZES.font * 1.5,
+    fontWeight: "700",
+    marginBottom: 20,
+    color: "#5a5a5a",
+    textAlign: "center",
+  },
+  predictAvailabilityBtn: {},
+  predictAvailabilityText: {
+    textAlign: "center",
+    fontSize: 24,
+    fontWeight: "700",
+    // paddingTop: 40,
+    // borderTopWidth: 1,
+    // borderTopColor: markerTheme.COLORS.overlay,
+    color: markerTheme.COLORS.black,
+    textDecorationLine: "underline",
+  },
+  predictedSlots: {
+    fontSize: 50,
+    fontWeight: "700",
+    color: markerTheme.COLORS.black,
+  },
+  predictedBtn: {
+    // backgroundColor: "#EC2121",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 100,
+    width: 100,
+    borderRadius: 20,
+    borderWidth: 4,
+    borderColor: "#EC2121",
+    marginTop: 20,
+  },
+  predictedTitle: {
+    // flex: 1,
+    textAlign: "center",
+    fontSize: 24,
+    fontWeight: "700",
+    paddingTop: 40,
+    borderTopWidth: 1,
+    borderTopColor: markerTheme.COLORS.overlay,
+    color: markerTheme.COLORS.black,
   },
 });

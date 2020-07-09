@@ -1,24 +1,17 @@
-import React from "react";
-import { createDrawerNavigator } from "@react-navigation/drawer";
+// import React from "react";
+// import { createDrawerNavigator } from "@react-navigation/drawer";
 
-import TabNavigator from "../navigation/TabNavigator";
-import Settings from "../screens/Settings";
-import About from "../screens/About";
-import Map from "../screens/Map";
+// import Settings from "../screens/Settings";
+// import About from "../screens/About";
 
-function Tab() {
-  return <TabNavigator />;
-}
+// const Drawer = createDrawerNavigator();
+// function DrawerNavigator() {
+//   return (
+//     <Drawer.Navigator initialRouteName="Home">
+//       <Drawer.Screen name="Settings" component={Settings} />
+//       <Drawer.Screen name="About" component={About} />
+//     </Drawer.Navigator>
+//   );
+// }
 
-const Drawer = createDrawerNavigator();
-function DrawerNavigator() {
-  return (
-    <Drawer.Navigator initialRouteName="Home">
-      <Drawer.Screen name="Home" component={Tab} />
-      <Drawer.Screen name="Settings" component={Settings} />
-      <Drawer.Screen name="About" component={About} />
-    </Drawer.Navigator>
-  );
-}
-
-export default DrawerNavigator;
+// export default DrawerNavigator;
